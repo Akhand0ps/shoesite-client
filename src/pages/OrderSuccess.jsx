@@ -122,13 +122,7 @@ const OrderSuccess = () => {
   }
 
   if (error) {
-    const isOrderNotFound = error.includes('not found');
     const isTimeout = error.includes('taking longer');
-    
-    return (
-      <div className="min-h-screen pt-16 flex items-center justify-center bg-gradient-to-b from-gray-50 to-white">
-        <div className="text-center max-w-md px-4">
-          <dTimeout = error.includes('taking longer');
     const isPaymentFailed = error.includes('Payment failed');
     
     return (
@@ -148,7 +142,13 @@ const OrderSuccess = () => {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            {isPaymentFailed ? 'Payment Failed' : isTimeout ? 'Verification Timeouttext-gray-900 mb-2">Order Details:</p>
+            {isPaymentFailed ? 'Payment Failed' : isTimeout ? 'Verification Timeout' : 'Verification Issue'}
+          </h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          
+          {order && (
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg text-left">
+              <p className="text-sm font-semibold text-gray-900 mb-2">Order Details:</p>
               <p className="text-sm text-gray-700">Order #: {order.orderNumber}</p>
               <p className="text-sm text-gray-700">Status: {order.paymentStatus}</p>
               <p className="text-sm text-gray-700">Amount: ₹{order.totalAmount?.toFixed(2)}</p>
