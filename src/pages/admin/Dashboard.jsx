@@ -20,15 +20,31 @@ const AdminDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const [productsRes, ordersRes, categoriesRes] = await Promise.all([
+      const [productsRes, ordersRes, categoriesRes] = await Promise.allSettled([
         api.get('/product/products'),
         api.get('/order/admin/orders'),
         api.get('/cat/')
       ]);
 
-      const products = productsRes.data.Products || productsRes.data.products || [];
-      const orders = ordersRes.data.orders || [];
-      const categories = categoriesRes.data.AllCats || [];
+      console.log('Products Response:', productsRes);
+      console.log('Orders Response:', ordersRes);
+      console.log('Categories Response:', categoriesRes);
+
+      const products = productsRes.status === 'fulfilled' 
+        ? (productsRes.value.data.Products || productsRes.value.data.products || [])
+        : [];
+      
+      const orders = ordersRes.status === 'fulfilled'
+        ? (ordersRes.value.data.Allorders || ordersRes.value.data.orders || [])
+        : [];
+      
+      const categories = categoriesRes.status === 'fulfilled'
+        ? (categoriesRes.value.data.AllCats || [])
+        : [];
+
+      if (productsRes.status === 'rejected') console.error('Products fetch failed:', productsRes.reason);
+      if (ordersRes.status === 'rejected') console.error('Orders fetch failed:', ordersRes.reason);
+      if (categoriesRes.status === 'rejected') console.error('Categories fetch failed:', categoriesRes.reason);
 
       setStats({
         totalProducts: products.length,
