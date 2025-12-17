@@ -43,16 +43,27 @@ const ProductForm = () => {
     try {
       const { data } = await api.get(`/product/${slug}`);
       const product = data.product;
+      
+      // Convert Decimal128 to number if needed
+      const originalPrice = product.originalPrice?.$numberDecimal 
+        ? product.originalPrice.$numberDecimal 
+        : product.originalPrice || '';
+      
       setFormData({
         title: product.title || product.name || '',
         description: product.description || '',
         brand: product.brand || '',
         category: product.category?._id || '',
-        originalPrice: product.originalPrice || '',
-        variants: product.variants?.map(v => ({ size: v.size.toString(), stock: v.stock, price: v.price })) || [{ size: '6', stock: '', price: '' }]
+        originalPrice: originalPrice,
+        variants: product.variants?.map(v => ({ 
+          size: v.size.toString(), 
+          stock: v.stock, 
+          price: v.price 
+        })) || [{ size: '6', stock: '', price: '' }]
       });
     } catch (error) {
       console.error('Error fetching product:', error);
+      alert('Failed to load product details: ' + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }
@@ -95,9 +106,16 @@ const ProductForm = () => {
       formDataToSend.append('brand', formData.brand);
       formDataToSend.append('category', formData.category);
       formDataToSend.append('originalPrice', formData.originalPrice);
+      formDataToSend.append('isPublic', 'true');
       formDataToSend.append('variants', JSON.stringify(formData.variants));
 
-      console.log(formDataToSend);
+      console.log('FormData being sent:', {
+        title: formData.title,
+        brand: formData.brand,
+        category: formData.category,
+        originalPrice: formData.originalPrice,
+        variants: formData.variants
+      });
 
       images.forEach((image) => {
         formDataToSend.append('media', image);
@@ -117,8 +135,10 @@ const ProductForm = () => {
 
       navigate('/admin/products');
     } catch (error) {
-      alert(error.response?.data?.message || 'Failed to save product');
-      console.error('Error:', error);
+      console.error('Submit Error:', error);
+      console.error('Error Response:', error.response);
+      console.error('Error Data:', error.response?.data);
+      alert(error.response?.data?.message || error.message || 'Failed to save product');
     } finally {
       setLoading(false);
     }
