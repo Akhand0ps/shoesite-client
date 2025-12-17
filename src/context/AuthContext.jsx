@@ -16,12 +16,29 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check localStorage for user data
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    const verifyAuth = async () => {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          // Verify token is still valid by making a test request
+          if (userData.isAdmin) {
+            await api.get('/order/admin/orders', { params: { limit: 1 } });
+          } else {
+            await api.get('/cart/viewcart');
+          }
+          setUser(userData);
+        } catch (error) {
+          // Token invalid or expired, clear localStorage
+          console.log('Token verification failed, logging out');
+          localStorage.removeItem('user');
+          setUser(null);
+        }
+      }
+      setLoading(false);
+    };
+    
+    verifyAuth();
   }, []);
 
   const login = async (email, password) => {
