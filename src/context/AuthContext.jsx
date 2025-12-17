@@ -21,20 +21,18 @@ export const AuthProvider = ({ children }) => {
       if (storedUser) {
         try {
           const userData = JSON.parse(storedUser);
-          // Try to verify token with a simple authenticated endpoint
-          await api.get('/cat/');
+          // Verify token is still valid by making a test request
+          if (userData.isAdmin) {
+            await api.get('/order/admin/orders', { params: { limit: 1 } });
+          } else {
+            await api.get('/cart/viewcart');
+          }
           setUser(userData);
         } catch (error) {
-          // Only logout if it's a 401 (Unauthorized) or 403 (Forbidden)
-          if (error.response?.status === 401 || error.response?.status === 403) {
-            console.log('Token invalid or expired, clearing session');
-            localStorage.removeItem('user');
-            setUser(null);
-          } else {
-            // Network error or other issue - keep user logged in
-            console.log('Token verification failed but keeping session:', error.message);
-            setUser(userData);
-          }
+          // Token invalid or expired, clear localStorage
+          console.log('Token verification failed, logging out');
+          localStorage.removeItem('user');
+          setUser(null);
         }
       }
       setLoading(false);
