@@ -15,6 +15,7 @@ const OrderSuccess = () => {
   const maxPolls = 15; // 30 seconds total (15 polls × 2 seconds)
   const pollIntervalRef = useRef(null);
   const pollCountRef = useRef(0);
+  const isPollingStoppedRef = useRef(false);
 
   useEffect(() => {
     const orderNumber = searchParams.get('orderNumber');
@@ -27,6 +28,11 @@ const OrderSuccess = () => {
 
     // Function to check payment status
     const checkPaymentStatus = async () => {
+      // Stop if polling has been stopped
+      if (isPollingStoppedRef.current) {
+        return;
+      }
+
       try {
         // Increment poll count
         pollCountRef.current += 1;
@@ -44,7 +50,9 @@ const OrderSuccess = () => {
         const paymentStatus = data.order.paymentStatus;
         
         if (paymentStatus === 'paid') {
-          // Payment successful - stop polling
+          // Payment successful - stop polling immediately
+          isPollingStoppedRef.current = true;
+          
           if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current);
             pollIntervalRef.current = null;
@@ -58,6 +66,8 @@ const OrderSuccess = () => {
           
         } else if (paymentStatus === 'failed') {
           // Payment failed - stop polling
+          isPollingStoppedRef.current = true;
+          
           if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current);
             pollIntervalRef.current = null;
@@ -69,6 +79,8 @@ const OrderSuccess = () => {
           // Still pending - check if timeout reached
           if (pollCountRef.current >= maxPolls) {
             // Timeout reached
+            isPollingStoppedRef.current = true;
+            
             if (pollIntervalRef.current) {
               clearInterval(pollIntervalRef.current);
               pollIntervalRef.current = null;
@@ -82,6 +94,8 @@ const OrderSuccess = () => {
         console.error('Payment verification error:', error);
         
         // Stop polling on error
+        isPollingStoppedRef.current = true;
+        
         if (pollIntervalRef.current) {
           clearInterval(pollIntervalRef.current);
           pollIntervalRef.current = null;
@@ -240,8 +254,15 @@ const OrderSuccess = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Order Status</p>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-800">
-                  {order?.orderStatus || 'Pending'}
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold capitalize ${
+                  order?.orderStatus === 'processing' ? 'bg-blue-100 text-blue-800' :
+                  order?.orderStatus === 'shipped' ? 'bg-purple-100 text-purple-800' :
+                  order?.orderStatus === 'delivered' ? 'bg-green-100 text-green-800' :
+                  order?.orderStatus === 'cancelled' ? 'bg-red-100 text-red-800' :
+                  order?.orderStatus === 'refunded' ? 'bg-orange-100 text-orange-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {order?.orderStatus || 'pending'}
                 </span>
               </div>
               <div>
