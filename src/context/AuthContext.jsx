@@ -38,23 +38,20 @@ export const AuthProvider = ({ children }) => {
       // Wait for cookie to be set by browser
       await new Promise(resolve => setTimeout(resolve, 150));
       
-      // Determine role by testing admin endpoint
-      // If 200/404 = admin, if 403 = user, if 401 = no valid token (shouldn't happen)
+      // Determine role by testing admin-specific endpoint
+      // Backend middleware checks adminToken for /admin routes, userToken for others
       let isAdmin = false;
       try {
+        // Test admin endpoint - only works with adminToken cookie
         await api.get('/order/admin/orders');
-        // Success or 404 means user has admin token
         isAdmin = true;
       } catch (error) {
-        if (error.response?.status === 403) {
-          // Forbidden = user has userToken but not admin
+        // 403 = has userToken but not admin, 400/401 = no valid token, 404 = admin but no orders
+        if (error.response?.status === 403 || error.response?.status === 400 || error.response?.status === 401) {
           isAdmin = false;
-        } else if (error.response?.status === 401 || error.response?.status === 400) {
-          // Unauthorized = no valid token
-          return { success: false, message: 'Authentication failed - please try again' };
         } else {
-          // Network error or other - assume success, let backend handle it
-          isAdmin = false;
+          // Network error or 404 (admin with no orders) - treat as admin
+          isAdmin = true;
         }
       }
       
