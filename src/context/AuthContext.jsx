@@ -31,20 +31,38 @@ export const AuthProvider = ({ children }) => {
       // Backend returns success but no user data
       // We need to determine if user is admin or regular user
       // The backend sets userToken or adminToken cookie based on role
-      // We'll make a test request to see which role we have
+      
+      // Wait a moment for cookie to be set properly
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Try to verify which role by checking endpoints
+      let isAdmin = false;
       
       try {
-        // Try admin endpoint - if it works, user is admin
-        await api.get('/order/admin/orders', { params: { limit: 1 } });
-        const userData = { email, isAdmin: true, name: email.split('@')[0] };
-        localStorage.setItem('user', JSON.stringify(userData));
-        setUser(userData);
-      } catch {
-        // Admin endpoint failed, user is regular user
-        const userData = { email, isAdmin: false, name: email.split('@')[0] };
-        localStorage.setItem('user', JSON.stringify(userData));
-        setUser(userData);
+        // Try admin-only endpoint to check if user is admin
+        await api.get('/cat/', { timeout: 3000 }); // Categories endpoint requires auth
+        
+        // If that works, try admin-specific endpoint
+        try {
+          await api.get('/product/admin/products/test/stock', { timeout: 3000 });
+          isAdmin = true; // Only admin can access this
+        } catch (adminError) {
+          // Not admin or endpoint doesn't exist - check by other means
+          isAdmin = false;
+        }
+      } catch (error) {
+        // Auth failed completely
+        console.error('Auth verification error:', error);
       }
+      
+      const userData = { 
+        email, 
+        isAdmin, 
+        name: email.split('@')[0] 
+      };
+      
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
       
       return { success: true };
     } catch (error) {
