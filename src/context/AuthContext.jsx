@@ -34,24 +34,28 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data } = await api.post('/auth/login', { email, password });
       
-      // Wait for cookie to be set by browser
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
       // Backend sets userToken or adminToken cookie based on role
-      // Test which role by trying admin endpoint
+      // Wait for cookie to be set by browser
+      await new Promise(resolve => setTimeout(resolve, 150));
+      
+      // Determine role by testing admin endpoint
+      // If 200/404 = admin, if 403 = user, if 401 = no valid token (shouldn't happen)
       let isAdmin = false;
       try {
-        await api.get('/cat/');
-        // If cat/ works, check if admin endpoint works
-        try {
-          await api.get('/order/admin/orders');
-          isAdmin = true;
-        } catch {
+        await api.get('/order/admin/orders');
+        // Success or 404 means user has admin token
+        isAdmin = true;
+      } catch (error) {
+        if (error.response?.status === 403) {
+          // Forbidden = user has userToken but not admin
+          isAdmin = false;
+        } else if (error.response?.status === 401 || error.response?.status === 400) {
+          // Unauthorized = no valid token
+          return { success: false, message: 'Authentication failed - please try again' };
+        } else {
+          // Network error or other - assume success, let backend handle it
           isAdmin = false;
         }
-      } catch {
-        // Not even basic auth worked, something wrong
-        return { success: false, message: 'Authentication failed' };
       }
       
       const userData = { email, isAdmin, name: email.split('@')[0] };
