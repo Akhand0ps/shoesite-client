@@ -13,9 +13,9 @@ const Checkout = () => {
     street: '',
     city: '',
     state: '',
-    zipCode: '',
+    zip: '',
     additionalphone: '',
-    paymentMethod: 'card'
+    paymentMethod: ''
   });
   
   const [loading, setLoading] = useState(false);
@@ -36,13 +36,13 @@ const Checkout = () => {
     try {
       const orderData = {
         address: {
-          fullName: formData.name,
-          phoneNumber: formData.phone,
-          street: formData.street,
+          name: formData.name,
+          line1: formData.street,
           city: formData.city,
           state: formData.state,
-          zipCode: formData.zipCode,
-          country: 'India'
+          zip: formData.zip,
+          phone:formData.phone,
+          additionalphone:formData.additionalphone
         },
         paymentMethod: formData.paymentMethod
       };
@@ -185,7 +185,7 @@ const Checkout = () => {
                 <input
                   type="text"
                   name="zipCode"
-                  value={formData.zipCode}
+                  value={formData.zip}
                   onChange={handleChange}
                   required
                   minLength={6}
