@@ -13,7 +13,7 @@ const Checkout = () => {
     street: '',
     city: '',
     state: '',
-    zip: '',
+    zipCode: '',
     additionalphone: '',
     paymentMethod: ''
   });
@@ -40,7 +40,7 @@ const Checkout = () => {
           line1: formData.street,
           city: formData.city,
           state: formData.state,
-          zip: formData.zip,
+          zip: formData.zipCode,
           phone:formData.phone,
           additionalphone:formData.additionalphone
         },
@@ -184,8 +184,8 @@ const Checkout = () => {
                 </label>
                 <input
                   type="text"
-                  name="zip"
-                  value={formData.zip}
+                  name="zipCode"
+                  value={formData.zipCode}
                   onChange={handleChange}
                   required
                   minLength={6}
