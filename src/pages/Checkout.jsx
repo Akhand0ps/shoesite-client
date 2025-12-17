@@ -36,18 +36,16 @@ const Checkout = () => {
     try {
       const orderData = {
         address: {
-          name: formData.name,
-          line1: formData.street,
+          fullName: formData.name,
+          phoneNumber: formData.phone,
+          street: formData.street,
           city: formData.city,
           state: formData.state,
-          zip: formData.zipCode,
-          phone: formData.phone,
-          additionalphone:formData.additionalphone
+          zipCode: formData.zipCode,
+          country: 'India'
         },
         paymentMethod: formData.paymentMethod
       };
-
-      console.log("orderdata=>",orderData);
 
       const { data } = await api.post('/order/order', orderData);
       

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useCart } from '../context/CartContext';
@@ -11,73 +11,167 @@ const OrderSuccess = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [verificationAttempt, setVerificationAttempt] = useState(0);
+  const maxRetries = 5;
+  const retryTimeoutRef = useRef(null);
 
   useEffect(() => {
     const orderId = searchParams.get('orderId');
+    const razorpayPaymentId = searchParams.get('razorpay_payment_id');
+    const razorpayPaymentLinkStatus = searchParams.get('razorpay_payment_link_status');
     
     if (!orderId) {
-      setError('No order ID found');
+      setError('No order ID found in URL. Please check your orders page.');
       setLoading(false);
       return;
     }
 
-    const verifyPayment = async () => {
+    // Function to verify payment with retry logic
+    const verifyPayment = async (attemptNumber = 0) => {
       try {
-        const { data } = await api.get(`/order/${orderId}`);
+        setVerificationAttempt(attemptNumber + 1);
         
-        if (data.success) {
-          setOrder(data.order);
-          // Refresh cart after successful payment
+        // Fetch all orders - more efficient than individual lookups when endpoint doesn't exist
+        const { data } = await api.get('/order/myorders');
+        
+        if (!data.success || !data.Allorders) {
+          throw new Error('Invalid response from server');
+        }
+        
+        // Find the specific order by ID
+        const foundOrder = data.Allorders.find(order => order._id === orderId);
+        
+        if (!foundOrder) {
+          throw new Error('Order not found. It may have been cancelled.');
+        }
+        
+        setOrder(foundOrder);
+        
+        // Check payment status from multiple sources
+        const isPaymentCompleted = 
+          foundOrder.paymentStatus === 'completed' ||
+          foundOrder.paymentStatus === 'paid' ||
+          razorpayPaymentLinkStatus === 'paid';
+        
+        if (isPaymentCompleted) {
+          // Payment confirmed - refresh cart and clear stored data
           await refreshCart();
-          // Clear stored order info
           localStorage.removeItem('pendingOrderId');
           localStorage.removeItem('pendingOrderNumber');
+          setLoading(false);
+        } else if (attemptNumber < maxRetries) {
+          // Payment still pending - retry with exponential backoff
+          const backoffDelay = Math.min(1000 * Math.pow(2, attemptNumber), 10000); // Max 10 seconds
+          
+          retryTimeoutRef.current = setTimeout(() => {
+            verifyPayment(attemptNumber + 1);
+          }, backoffDelay);
         } else {
-          setError('Order not found');
+          // Max retries reached - show current status
+          setLoading(false);
+          if (foundOrder.paymentStatus === 'pending') {
+            setError('Payment verification is taking longer than expected. Please check your orders page in a few minutes.');
+          }
         }
       } catch (error) {
         console.error('Payment verification error:', error);
-        setError('Failed to verify payment. Please check your orders page.');
-      } finally {
-        setLoading(false);
+        
+        if (attemptNumber < maxRetries) {
+          // Retry on error with exponential backoff
+          const backoffDelay = Math.min(2000 * Math.pow(2, attemptNumber), 15000);
+          
+          retryTimeoutRef.current = setTimeout(() => {
+            verifyPayment(attemptNumber + 1);
+          }, backoffDelay);
+        } else {
+          // Max retries reached
+          setError(
+            error.message || 
+            'Unable to verify payment status. Please check your orders page or contact support if payment was deducted.'
+          );
+          setLoading(false);
+        }
       }
     };
 
+    // Start verification
     verifyPayment();
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
   }, [searchParams, refreshCart]);
 
   if (loading) {
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center bg-gradient-to-b from-gray-50 to-white">
-        <div className="text-center">
+        <div className="text-center max-w-md px-4">
           <div className="w-16 h-16 border-4 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">Verifying your payment...</p>
+          <p className="text-gray-600 text-lg font-semibold mb-2">Verifying your payment...</p>
+          <p className="text-gray-500 text-sm">
+            Attempt {verificationAttempt} of {maxRetries + 1}
+          </p>
+          <p className="text-gray-400 text-xs mt-4">
+            Please don't close this page. This usually takes a few seconds.
+          </p>
         </div>
       </div>
     );
   }
 
   if (error) {
+    const isOrderNotFound = error.includes('not found');
+    const isTimeout = error.includes('taking longer');
+    
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center bg-gradient-to-b from-gray-50 to-white">
         <div className="text-center max-w-md px-4">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+            isTimeout ? 'bg-yellow-100' : 'bg-red-100'
+          }`}>
+            <svg className={`w-8 h-8 ${
+              isTimeout ? 'text-yellow-600' : 'text-red-600'
+            }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {isTimeout ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              )}
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Verification Failed</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            {isTimeout ? 'Verification In Progress' : 'Verification Issue'}
+          </h2>
           <p className="text-gray-600 mb-6">{error}</p>
-          <div className="flex gap-3 justify-center">
+          
+          {order && (
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg text-left">
+              <p className="text-sm font-semibold text-gray-900 mb-2">Order Details:</p>
+              <p className="text-sm text-gray-700">Order #: {order.orderNumber}</p>
+              <p className="text-sm text-gray-700">Status: {order.paymentStatus}</p>
+              <p className="text-sm text-gray-700">Amount: ₹{order.totalAmount?.toFixed(2)}</p>
+            </div>
+          )}
+          
+          <div className="flex flex-col gap-3">
             <Link
               to="/orders"
               className="px-6 py-3 bg-gray-900 hover:bg-black text-white rounded-lg font-semibold transition-colors"
             >
-              View Orders
+              Check My Orders
             </Link>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-lg font-semibold transition-colors"
+            >
+              Try Again
+            </button>
             <Link
               to="/products"
-              className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-lg font-semibold transition-colors"
+              className="px-6 py-3 text-gray-600 hover:text-gray-900 transition-colors"
             >
               Continue Shopping
             </Link>
@@ -206,6 +300,13 @@ const OrderSuccess = () => {
             </Link>
           </div>
 
+          {/* Verification Status */}
+          {verificationAttempt > 1 && isPaymentCompleted && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+              <p>✓ Payment verified after {verificationAttempt} attempt(s)</p>
+            </div>
+          )}
+          
           {/* Additional Info */}
           {isPaymentCompleted && (
             <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -216,6 +317,20 @@ const OrderSuccess = () => {
                 <div className="text-sm text-blue-800">
                   <p className="font-semibold mb-1">What's Next?</p>
                   <p>We've sent a confirmation email to your registered email address. Your order will be processed and shipped soon.</p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {!isPaymentCompleted && order && (
+            <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex gap-2">
+                <svg className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div className="text-sm text-yellow-800">
+                  <p className="font-semibold mb-1">Payment Pending</p>
+                  <p>Your payment is being processed. This can take a few minutes. Check back later or visit your orders page.</p>
                 </div>
               </div>
             </div>
