@@ -11,126 +11,110 @@ const OrderSuccess = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [verificationAttempt, setVerificationAttempt] = useState(0);
-  const maxRetries = 3; // Reduced since webhook handles updates
-  const retryTimeoutRef = useRef(null);
-  const initialDelayRef = useRef(true);
+  const [pollCount, setPollCount] = useState(0);
+  const maxPolls = 15; // 30 seconds total (15 polls × 2 seconds)
+  const pollIntervalRef = useRef(null);
 
   useEffect(() => {
-    const orderId = searchParams.get('orderId');
-    const razorpayPaymentId = searchParams.get('razorpay_payment_id');
-    const razorpayPaymentLinkStatus = searchParams.get('razorpay_payment_link_status');
+    const orderNumber = searchParams.get('orderNumber');
     
-    if (!orderId) {
-      setError('No order ID found in URL. Please check your orders page.');
+    if (!orderNumber) {
+      setError('No order number found in URL. Please check your orders page.');
       setLoading(false);
       return;
     }
 
-    // Function to verify payment with retry logic
-    const verifyPayment = async (attemptNumber = 0) => {
+    // Function to check payment status
+    const checkPaymentStatus = async () => {
       try {
-        setVerificationAttempt(attemptNumber + 1);
+        // Call the specific order endpoint
+        const { data } = await api.get(`/order/${orderNumber}`);
         
-        // Wait 3 seconds on first attempt for Razorpay webhook to process
-        if (initialDelayRef.current && attemptNumber === 0) {
-          initialDelayRef.current = false;
-          await new Promise(resolve => setTimeout(resolve, 3000));
+        if (!data.success || !data.order) {
+          throw new Error('Order not found');
         }
         
-        // Fetch all orders to find the specific one
-        // Note: Backend webhook at /api/v1/payment/webhook updates order status automatically
-        const { data } = await api.get('/order/myorders');
+        setOrder(data.order);
+        setPollCount(prev => prev + 1);
         
-        if (!data.success || !data.Allorders) {
-          throw new Error('Invalid response from server');
-        }
+        const paymentStatus = data.order.paymentStatus;
         
-        // Find the specific order by ID
-        const foundOrder = data.Allorders.find(order => order._id === orderId);
-        
-        if (!foundOrder) {
-          throw new Error('Order not found. It may have been cancelled.');
-        }
-        
-        setOrder(foundOrder);
-        
-        // Check payment status from multiple sources
-        const isPaymentCompleted = 
-          foundOrder.paymentStatus === 'completed' ||
-          foundOrder.paymentStatus === 'paid' ||
-          razorpayPaymentLinkStatus === 'paid';
-        
-        if (isPaymentCompleted) {
-          // Payment confirmed - refresh cart and clear stored data
+        if (paymentStatus === 'paid') {
+          // Payment successful - stop polling
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+          }
+          
+          // Refresh cart and clear stored data
           await refreshCart();
           localStorage.removeItem('pendingOrderId');
           localStorage.removeItem('pendingOrderNumber');
           setLoading(false);
-        } else if (attemptNumber < maxRetries) {
-          // Payment still pending - webhook may be delayed, retry with backoff
-          // Webhook typically completes within 2-5 seconds
-          const backoffDelay = Math.min(2000 * Math.pow(1.5, attemptNumber), 8000); // 2s, 3s, 4.5s
           
-          retryTimeoutRef.current = setTimeout(() => {
-            verifyPayment(attemptNumber + 1);
-          }, backoffDelay);
-        } else {
-          // Max retries reached - show current status
+        } else if (paymentStatus === 'failed') {
+          // Payment failed - stop polling
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+          }
+          setError('Payment failed. Please try again or contact support.');
           setLoading(false);
-          if (foundOrder.paymentStatus === 'pending') {
+          
+        } else if (paymentStatus === 'pending') {
+          // Still pending - continue polling (handled by interval)
+          if (pollCount >= maxPolls) {
+            // Timeout reached
+            if (pollIntervalRef.current) {
+              clearInterval(pollIntervalRef.current);
+            }
             setError('Payment verification is taking longer than expected. Please check your orders page in a few minutes.');
+            setLoading(false);
           }
         }
+        
       } catch (error) {
         console.error('Payment verification error:', error);
         
-        if (attemptNumber < maxRetries) {
-          // Retry on error - webhook might still be processing
-          const backoffDelay = Math.min(3000 * Math.pow(1.5, attemptNumber), 10000);
-          
-          retryTimeoutRef.current = setTimeout(() => {
-            verifyPayment(attemptNumber + 1);
-          }, backoffDelay);
-        } else {
-          // Max retries reached
-          setError(
-            error.message || 
-            'Unable to verify payment status. Please check your orders page or contact support if payment was deducted.'
-          );
-          setLoading(false);
+        // Stop polling on error
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
         }
+        
+        setError(
+          error.response?.data?.message || 
+          error.message || 
+          'Unable to verify payment status. Please check your orders page or contact support if payment was deducted.'
+        );
+        setLoading(false);
       }
     };
 
-    // Start verification
-    verifyPayment();
+    // Start polling immediately
+    checkPaymentStatus();
     
-    // Cleanup timeout on unmount
+    // Set up interval to poll every 2 seconds
+    pollIntervalRef.current = setInterval(() => {
+      checkPaymentStatus();
+    }, 2000);
+    
+    // Cleanup interval on unmount
     return () => {
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
       }
     };
-  }, [searchParams, refreshCart]);
+  }, [searchParams, refreshCart, pollCount]);
 
   if (loading) {
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center bg-gradient-to-b from-gray-50 to-white">
         <div className="text-center max-w-md px-4">
           <div className="w-16 h-16 border-4 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg font-semibold mb-2">Verifying your payment...</p>
-          {verificationAttempt === 1 ? (
-            <p className="text-gray-500 text-sm">
-              Processing payment confirmation...
-            </p>
-          ) : (
-            <p className="text-gray-500 text-sm">
-              Verification attempt {verificationAttempt} of {maxRetries + 1}
-            </p>
-          )}
+          <p className="text-gray-600 text-lg font-semibold mb-2">Verifying payment...</p>
+          <p className="text-gray-500 text-sm">
+            Checking payment status ({pollCount}/{maxPolls})
+          </p>
           <p className="text-gray-400 text-xs mt-4">
-            Please wait while we confirm your payment with the payment gateway.
+            Please don't close this page. This usually takes a few seconds.
           </p>
         </div>
       </div>
@@ -140,6 +124,12 @@ const OrderSuccess = () => {
   if (error) {
     const isOrderNotFound = error.includes('not found');
     const isTimeout = error.includes('taking longer');
+    
+    return (
+      <div className="min-h-screen pt-16 flex items-center justify-center bg-gradient-to-b from-gray-50 to-white">
+        <div className="text-center max-w-md px-4">
+          <dTimeout = error.includes('taking longer');
+    const isPaymentFailed = error.includes('Payment failed');
     
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center bg-gradient-to-b from-gray-50 to-white">
@@ -158,13 +148,7 @@ const OrderSuccess = () => {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            {isTimeout ? 'Verification In Progress' : 'Verification Issue'}
-          </h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          
-          {order && (
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg text-left">
-              <p className="text-sm font-semibold text-gray-900 mb-2">Order Details:</p>
+            {isPaymentFailed ? 'Payment Failed' : isTimeout ? 'Verification Timeouttext-gray-900 mb-2">Order Details:</p>
               <p className="text-sm text-gray-700">Order #: {order.orderNumber}</p>
               <p className="text-sm text-gray-700">Status: {order.paymentStatus}</p>
               <p className="text-sm text-gray-700">Amount: ₹{order.totalAmount?.toFixed(2)}</p>
@@ -316,9 +300,9 @@ const OrderSuccess = () => {
           </div>
 
           {/* Verification Status */}
-          {verificationAttempt > 1 && isPaymentCompleted && (
+          {pollCount > 1 && isPaymentCompleted && (
             <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
-              <p>✓ Payment verified after {verificationAttempt} attempt(s)</p>
+              <p>✓ Payment verified after {pollCount} check(s)</p>
             </div>
           )}
           
