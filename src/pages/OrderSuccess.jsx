@@ -180,7 +180,7 @@ const OrderSuccess = () => {
     );
   }
 
-  const isPaymentCompleted = order?.paymentStatus === 'completed';
+  const isPaymentCompleted = order?.paymentStatus === 'paid' || order?.paymentStatus === 'completed';
 
   return (
     <div className="min-h-screen pt-16 bg-gradient-to-b from-gray-50 to-white">
