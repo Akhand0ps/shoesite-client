@@ -31,7 +31,7 @@ const AdminProducts = () => {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
 
     try {
-      await api.delete(`/product/delete/${slug}`);
+      await api.delete(`/product/admin/delete/${slug}`);
       setProducts(products.filter(p => p.slug !== slug));
     } catch (error) {
       alert('Failed to delete product');
@@ -41,7 +41,7 @@ const AdminProducts = () => {
 
   const handleToggleVisibility = async (slug, currentStatus) => {
     try {
-      await api.patch(`/product/toggle/${slug}`, { isPublic: !currentStatus });
+      await api.patch(`/product/admin/toggle/${slug}`, { isPublic: !currentStatus });
       setProducts(products.map(p => 
         p.slug === slug ? { ...p, isPublic: !currentStatus } : p
       ));

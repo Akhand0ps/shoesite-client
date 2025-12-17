@@ -32,7 +32,7 @@ const ProductForm = () => {
 
   const fetchCategories = async () => {
     try {
-      const { data } = await api.get('/admin/cat/');
+      const { data } = await api.get('/cat/');
       setCategories(data.AllCats || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -100,7 +100,7 @@ const ProductForm = () => {
       console.log(formDataToSend);
 
       images.forEach((image) => {
-        formDataToSend.append('imageUrl', image);
+        formDataToSend.append('media', image);
       });
 
       if (isEdit) {

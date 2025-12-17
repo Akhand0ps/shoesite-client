@@ -21,9 +21,9 @@ const AdminDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       const [productsRes, ordersRes, categoriesRes] = await Promise.all([
-        api.get('/product/admin/products'),
+        api.get('/product/products'),
         api.get('/order/admin/orders'),
-        api.get('/admin/cat/')
+        api.get('/cat/')
       ]);
 
       const products = productsRes.data.Products || productsRes.data.products || [];

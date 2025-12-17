@@ -21,8 +21,8 @@ const AdminOrders = () => {
       const { data } = await api.get('/order/admin/orders');
       console.log('Admin Orders API Response:', data);
       
-      // Handle different response field names
-      const ordersArray = data.orders || data.Allorders || data.allOrders || [];
+      // Backend returns 'Allorders' field
+      const ordersArray = data.Allorders || [];
       setOrders(ordersArray);
     } catch (error) {
       setError('Failed to load orders');

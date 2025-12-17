@@ -20,7 +20,7 @@ const AdminCategories = () => {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const { data } = await api.get('/admin/cat/');
+      const { data } = await api.get('/cat/');
       setCategories(data.AllCats || []);
     } catch (error) {
       setError('Failed to load categories');
@@ -35,9 +35,9 @@ const AdminCategories = () => {
     
     try {
       if (editingCategory) {
-        await api.put(`/admin/cat/edit/${editingCategory.slug}`, formData);
+        await api.put(`/cat/admin/edit/${editingCategory.slug}`, formData);
       } else {
-        await api.post('/admin/cat/create-cat', formData);
+        await api.post('/cat/admin/create-cat', formData);
       }
       
       fetchCategories();
@@ -53,7 +53,7 @@ const AdminCategories = () => {
     if (!window.confirm('Are you sure? This will fail if products are assigned to this category.')) return;
 
     try {
-      await api.delete(`/admin/cat/delete/${id}`);
+      await api.delete(`/cat/admin/delete/${id}`);
       fetchCategories();
     } catch (error) {
       alert(error.response?.data?.message || 'Failed to delete category');
