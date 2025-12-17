@@ -184,7 +184,7 @@ const Checkout = () => {
                 </label>
                 <input
                   type="text"
-                  name="zipCode"
+                  name="zip"
                   value={formData.zip}
                   onChange={handleChange}
                   required
