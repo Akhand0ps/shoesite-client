@@ -16,10 +16,10 @@ const OrderSuccess = () => {
   const pollIntervalRef = useRef(null);
 
   useEffect(() => {
-    const orderNumber = searchParams.get('orderNumber');
+    const orderId = searchParams.get('orderId');
     
-    if (!orderNumber) {
-      setError('No order number found in URL. Please check your orders page.');
+    if (!orderId) {
+      setError('No order ID found in URL. Please check your orders page.');
       setLoading(false);
       return;
     }
@@ -27,11 +27,25 @@ const OrderSuccess = () => {
     // Function to check payment status
     const checkPaymentStatus = async () => {
       try {
-        // Call the specific order endpoint
-        const { data } = await api.get(`/order/${orderNumber}`);
+        // First, fetch all orders to get the orderNumber from orderId
+        const { data: ordersData } = await api.get('/order/myorders');
+        
+        if (!ordersData.success || !ordersData.Allorders) {
+          throw new Error('Unable to fetch orders');
+        }
+        
+        // Find the order with matching ID to get its orderNumber
+        const foundOrder = ordersData.Allorders.find(order => order._id === orderId);
+        
+        if (!foundOrder) {
+          throw new Error('Order not found');
+        }
+        
+        // Now fetch the specific order using orderNumber endpoint
+        const { data } = await api.get(`/order/${foundOrder.orderNumber}`);
         
         if (!data.success || !data.order) {
-          throw new Error('Order not found');
+          throw new Error('Unable to fetch order details');
         }
         
         setOrder(data.order);
