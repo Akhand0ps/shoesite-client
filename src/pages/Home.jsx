@@ -160,7 +160,7 @@ const Home = () => {
                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-900 rounded-xl flex items-center justify-center">
                   <span className="text-white font-bold text-lg sm:text-xl">S</span>
                 </div>
-                <span className="text-lg sm:text-xl font-bold text-gray-900">SHOESITE</span>
+                <span className="text-lg sm:text-xl font-bold text-gray-900">SOLEVIA</span>
               </div>
               <p className="text-gray-600 text-sm leading-relaxed">
                 Premium footwear collection for the modern lifestyle. Quality meets style.
@@ -202,7 +202,7 @@ const Home = () => {
 
           {/* Bottom Bar */}
           <div className="pt-6 sm:pt-8 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4">
-            <p className="text-gray-500 text-xs sm:text-sm text-center sm:text-left">© 2025 SHOESITE. All rights reserved</p>
+            <p className="text-gray-500 text-xs sm:text-sm text-center sm:text-left">© 2025 SOLEVIA. All rights reserved</p>
             <div className="flex items-center gap-4 sm:gap-6">
               <a href="#" className="text-gray-500 hover:text-gray-900 text-xs sm:text-sm transition-colors">Privacy Policy</a>
               <a href="#" className="text-gray-500 hover:text-gray-900 text-xs sm:text-sm transition-colors">Terms of Service</a>

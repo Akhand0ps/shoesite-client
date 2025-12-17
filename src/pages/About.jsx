@@ -5,7 +5,7 @@ const About = () => {
       <div className="bg-gradient-to-b from-gray-50 to-white py-12 sm:py-16 md:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3 sm:mb-4">About Shoesite</h1>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3 sm:mb-4">About Solevia</h1>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4">
               Curating the best footwear from the digital world. Crafted with precision for the modern lifestyle.
             </p>
@@ -21,7 +21,7 @@ const About = () => {
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">The Platform</h2>
               <div className="space-y-3 sm:space-y-4 text-gray-600 text-sm sm:text-base">
                 <p className="leading-relaxed">
-                  Shoesite is a modern e-commerce platform designed to revolutionize the online footwear shopping experience. 
+                  Solevia is a modern e-commerce platform designed to revolutionize the online footwear shopping experience. 
                   Built with cutting-edge technology, we bring together style, comfort, and convenience in one seamless platform.
                 </p>
                 <p className="leading-relaxed">
