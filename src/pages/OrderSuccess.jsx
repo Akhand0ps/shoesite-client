@@ -12,8 +12,9 @@ const OrderSuccess = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [verificationAttempt, setVerificationAttempt] = useState(0);
-  const maxRetries = 5;
+  const maxRetries = 3; // Reduced since webhook handles updates
   const retryTimeoutRef = useRef(null);
+  const initialDelayRef = useRef(true);
 
   useEffect(() => {
     const orderId = searchParams.get('orderId');
@@ -31,7 +32,14 @@ const OrderSuccess = () => {
       try {
         setVerificationAttempt(attemptNumber + 1);
         
-        // Fetch all orders - more efficient than individual lookups when endpoint doesn't exist
+        // Wait 3 seconds on first attempt for Razorpay webhook to process
+        if (initialDelayRef.current && attemptNumber === 0) {
+          initialDelayRef.current = false;
+          await new Promise(resolve => setTimeout(resolve, 3000));
+        }
+        
+        // Fetch all orders to find the specific one
+        // Note: Backend webhook at /api/v1/payment/webhook updates order status automatically
         const { data } = await api.get('/order/myorders');
         
         if (!data.success || !data.Allorders) {
@@ -60,8 +68,9 @@ const OrderSuccess = () => {
           localStorage.removeItem('pendingOrderNumber');
           setLoading(false);
         } else if (attemptNumber < maxRetries) {
-          // Payment still pending - retry with exponential backoff
-          const backoffDelay = Math.min(1000 * Math.pow(2, attemptNumber), 10000); // Max 10 seconds
+          // Payment still pending - webhook may be delayed, retry with backoff
+          // Webhook typically completes within 2-5 seconds
+          const backoffDelay = Math.min(2000 * Math.pow(1.5, attemptNumber), 8000); // 2s, 3s, 4.5s
           
           retryTimeoutRef.current = setTimeout(() => {
             verifyPayment(attemptNumber + 1);
@@ -77,8 +86,8 @@ const OrderSuccess = () => {
         console.error('Payment verification error:', error);
         
         if (attemptNumber < maxRetries) {
-          // Retry on error with exponential backoff
-          const backoffDelay = Math.min(2000 * Math.pow(2, attemptNumber), 15000);
+          // Retry on error - webhook might still be processing
+          const backoffDelay = Math.min(3000 * Math.pow(1.5, attemptNumber), 10000);
           
           retryTimeoutRef.current = setTimeout(() => {
             verifyPayment(attemptNumber + 1);
@@ -111,11 +120,17 @@ const OrderSuccess = () => {
         <div className="text-center max-w-md px-4">
           <div className="w-16 h-16 border-4 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600 text-lg font-semibold mb-2">Verifying your payment...</p>
-          <p className="text-gray-500 text-sm">
-            Attempt {verificationAttempt} of {maxRetries + 1}
-          </p>
+          {verificationAttempt === 1 ? (
+            <p className="text-gray-500 text-sm">
+              Processing payment confirmation...
+            </p>
+          ) : (
+            <p className="text-gray-500 text-sm">
+              Verification attempt {verificationAttempt} of {maxRetries + 1}
+            </p>
+          )}
           <p className="text-gray-400 text-xs mt-4">
-            Please don't close this page. This usually takes a few seconds.
+            Please wait while we confirm your payment with the payment gateway.
           </p>
         </div>
       </div>
