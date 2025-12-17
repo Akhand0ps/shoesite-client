@@ -43,7 +43,8 @@ export const AuthProvider = ({ children }) => {
       let isAdmin = false;
       try {
         // Test admin endpoint - only works with adminToken cookie
-        await api.get('/order/admin/orders');
+        // Skip auth redirect on this request since we're just testing the role
+        await api.get('/order/admin/orders', { skipAuthRedirect: true });
         isAdmin = true;
       } catch (error) {
         // 403 = has userToken but not admin, 400/401 = no valid token, 404 = admin but no orders

@@ -12,14 +12,18 @@ const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const isLoginPage = window.location.pathname === '/login';
-    const isRegisterPage = window.location.pathname === '/register';
+    // Check if this request should skip auth redirect (e.g., during login role detection)
+    const skipAuthRedirect = error.config?.skipAuthRedirect;
     
-    // Don't redirect if already on login/register page (user is trying to login)
-    if ((error.response?.status === 401 || error.response?.status === 403) && !isLoginPage && !isRegisterPage) {
+    if ((error.response?.status === 401 || error.response?.status === 403) && !skipAuthRedirect) {
       // Token expired or unauthorized
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      const isLoginPage = window.location.pathname === '/login';
+      const isRegisterPage = window.location.pathname === '/register';
+      
+      if (!isLoginPage && !isRegisterPage) {
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     
     return Promise.reject(error);
