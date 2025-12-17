@@ -14,6 +14,7 @@ const OrderSuccess = () => {
   const [pollCount, setPollCount] = useState(0);
   const maxPolls = 15; // 30 seconds total (15 polls × 2 seconds)
   const pollIntervalRef = useRef(null);
+  const pollCountRef = useRef(0);
 
   useEffect(() => {
     const orderNumber = searchParams.get('orderNumber');
@@ -27,6 +28,10 @@ const OrderSuccess = () => {
     // Function to check payment status
     const checkPaymentStatus = async () => {
       try {
+        // Increment poll count
+        pollCountRef.current += 1;
+        setPollCount(pollCountRef.current);
+        
         // Call the specific order endpoint with orderNumber
         const { data } = await api.get(`/order/${orderNumber}`);
         
@@ -35,7 +40,6 @@ const OrderSuccess = () => {
         }
         
         setOrder(data.order);
-        setPollCount(prev => prev + 1);
         
         const paymentStatus = data.order.paymentStatus;
         
@@ -43,6 +47,7 @@ const OrderSuccess = () => {
           // Payment successful - stop polling
           if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
           }
           
           // Refresh cart and clear stored data
@@ -55,16 +60,18 @@ const OrderSuccess = () => {
           // Payment failed - stop polling
           if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
           }
           setError('Payment failed. Please try again or contact support.');
           setLoading(false);
           
         } else if (paymentStatus === 'pending') {
-          // Still pending - continue polling (handled by interval)
-          if (pollCount >= maxPolls) {
+          // Still pending - check if timeout reached
+          if (pollCountRef.current >= maxPolls) {
             // Timeout reached
             if (pollIntervalRef.current) {
               clearInterval(pollIntervalRef.current);
+              pollIntervalRef.current = null;
             }
             setError('Payment verification is taking longer than expected. Please check your orders page in a few minutes.');
             setLoading(false);
@@ -77,6 +84,7 @@ const OrderSuccess = () => {
         // Stop polling on error
         if (pollIntervalRef.current) {
           clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
         }
         
         setError(
@@ -100,9 +108,10 @@ const OrderSuccess = () => {
     return () => {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
       }
     };
-  }, [searchParams, refreshCart, pollCount]);
+  }, [searchParams, refreshCart]);
 
   if (loading) {
     return (
