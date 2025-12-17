@@ -34,29 +34,9 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data } = await api.post('/auth/login', { email, password });
       
-      // Backend sets userToken or adminToken cookie based on role
-      // Wait for cookie to be set by browser
-      await new Promise(resolve => setTimeout(resolve, 150));
-      
-      // Determine role by testing admin-specific endpoint
-      // Backend middleware checks adminToken for /admin routes, userToken for others
-      let isAdmin = false;
-      try {
-        // Test admin endpoint - only works with adminToken cookie
-        // Skip auth redirect on this request since we're just testing the role
-        await api.get('/order/admin/orders', { skipAuthRedirect: true });
-        isAdmin = true;
-      } catch (error) {
-        // 403 = has userToken but not admin, 400/401 = no valid token, 404 = admin but no orders
-        if (error.response?.status === 403 || error.response?.status === 400 || error.response?.status === 401) {
-          isAdmin = false;
-        } else {
-          // Network error or 404 (admin with no orders) - treat as admin
-          isAdmin = true;
-        }
-      }
-      
-      const userData = { email, isAdmin, name: email.split('@')[0] };
+      // Backend sets correct cookie (userToken or adminToken) based on user's role
+      // Store user info - backend will enforce authorization via cookies
+      const userData = { email, name: email.split('@')[0] };
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       

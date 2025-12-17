@@ -17,37 +17,9 @@ const ProtectedRoute = ({ children, requireAdmin = false, requireUser = false })
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Admin-only routes - backend will validate via adminToken cookie
-  // If user tries to access admin route but doesn't have adminToken,
-  // axios interceptor will catch 401/403 and redirect to login
-  if (requireAdmin && !user.isAdmin) {
-    return (
-      <div className="min-h-screen pt-16 flex items-center justify-center bg-white">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
-          <p className="text-gray-600 mb-6">You don't have permission to access this page.</p>
-          <a href="/" className="px-6 py-3 bg-gray-900 text-white rounded-xl font-semibold hover:bg-black transition-all">
-            Go to Home
-          </a>
-        </div>
-      </div>
-    );
-  }
-
-  // User-only routes (admins cannot access)
-  if (requireUser && user.isAdmin) {
-    return (
-      <div className="min-h-screen pt-16 flex items-center justify-center bg-white">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
-          <p className="text-gray-600 mb-6">Admin accounts cannot access user features. Please use a regular user account.</p>
-          <a href="/admin" className="px-6 py-3 bg-gray-900 text-white rounded-xl font-semibold hover:bg-black transition-all">
-            Go to Admin Panel
-          </a>
-        </div>
-      </div>
-    );
-  }
+  // Backend validates authorization via cookies (adminToken or userToken)
+  // If user doesn't have correct token, backend returns 401/403
+  // Axios interceptor will catch it and redirect to login
 
   return children;
 };
