@@ -16,52 +16,47 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const verifyAuth = async () => {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        try {
-          const userData = JSON.parse(storedUser);
-          // Verify token is still valid by making a test request
-          if (userData.isAdmin) {
-            await api.get('/order/admin/orders', { params: { limit: 1 } });
-          } else {
-            await api.get('/cart/viewcart');
-          }
-          setUser(userData);
-        } catch (error) {
-          // Token invalid or expired, clear localStorage
-          console.log('Token verification failed, logging out');
-          localStorage.removeItem('user');
-          setUser(null);
-        }
+    // Simply restore user from localStorage on mount
+    // Let the axios interceptor handle token expiration
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error('Failed to parse stored user:', error);
+        localStorage.removeItem('user');
       }
-      setLoading(false);
-    };
-    
-    verifyAuth();
+    }
+    setLoading(false);
   }, []);
 
   const login = async (email, password) => {
     try {
       const { data } = await api.post('/auth/login', { email, password });
       
-      // Backend returns success but no user data
-      // We need to determine if user is admin or regular user
-      // The backend sets userToken or adminToken cookie based on role
-      // We'll make a test request to see which role we have
+      // Wait for cookie to be set by browser
+      await new Promise(resolve => setTimeout(resolve, 100));
       
+      // Backend sets userToken or adminToken cookie based on role
+      // Test which role by trying admin endpoint
+      let isAdmin = false;
       try {
-        // Try admin endpoint - if it works, user is admin
-        await api.get('/order/admin/orders', { params: { limit: 1 } });
-        const userData = { email, isAdmin: true, name: email.split('@')[0] };
-        localStorage.setItem('user', JSON.stringify(userData));
-        setUser(userData);
+        await api.get('/cat/');
+        // If cat/ works, check if admin endpoint works
+        try {
+          await api.get('/order/admin/orders');
+          isAdmin = true;
+        } catch {
+          isAdmin = false;
+        }
       } catch {
-        // Admin endpoint failed, user is regular user
-        const userData = { email, isAdmin: false, name: email.split('@')[0] };
-        localStorage.setItem('user', JSON.stringify(userData));
-        setUser(userData);
+        // Not even basic auth worked, something wrong
+        return { success: false, message: 'Authentication failed' };
       }
+      
+      const userData = { email, isAdmin, name: email.split('@')[0] };
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
       
       return { success: true };
     } catch (error) {

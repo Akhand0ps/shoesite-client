@@ -17,7 +17,9 @@ const ProtectedRoute = ({ children, requireAdmin = false, requireUser = false })
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Admin-only routes
+  // Admin-only routes - backend will validate via adminToken cookie
+  // If user tries to access admin route but doesn't have adminToken,
+  // axios interceptor will catch 401/403 and redirect to login
   if (requireAdmin && !user.isAdmin) {
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center bg-white">
