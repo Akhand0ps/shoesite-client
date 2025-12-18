@@ -34,13 +34,28 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data } = await api.post('/auth/login', { email, password });
       
-      // Backend sets correct cookie (userToken or adminToken) based on user's role
-      // Store user info - backend will enforce authorization via cookies
-      const userData = { email, name: email.split('@')[0] };
+      // Backend sets userToken or adminToken cookie based on role
+      // The cookie is httpOnly and automatically sent with requests via axios withCredentials
+      // Wait for cookie to be set by browser
+      await new Promise(resolve => setTimeout(resolve, 150));
+      
+      // Determine role by testing admin-specific endpoint
+      // Backend middleware checks adminToken for /admin routes
+      let isAdmin = false;
+      try {
+        // Test admin endpoint - will use adminToken cookie if available
+        await api.get('/order/admin/orders');
+        isAdmin = true;
+      } catch (error) {
+        // If no adminToken cookie or authorization fails, user is not admin
+        isAdmin = false;
+      }
+      
+      const userData = { email, isAdmin, name: email.split('@')[0] };
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       
-      return { success: true };
+      return { success: true, isAdmin };
     } catch (error) {
       return { 
         success: false, 
