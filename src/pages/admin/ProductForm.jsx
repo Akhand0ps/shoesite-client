@@ -32,7 +32,7 @@ const ProductForm = () => {
 
   const fetchCategories = async () => {
     try {
-      const { data } = await api.get('/cat/');
+      const { data } = await api.get('/cat/admin');
       setCategories(data.AllCats || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -45,9 +45,7 @@ const ProductForm = () => {
       const product = data.product;
       
       // Convert Decimal128 to number if needed
-      const originalPrice = product.originalPrice?.$numberDecimal 
-        ? product.originalPrice.$numberDecimal 
-        : product.originalPrice || '';
+      const originalPrice = product.originalPrice ?? '';
       
       setFormData({
         title: product.title || product.name || '',
@@ -93,6 +91,7 @@ const ProductForm = () => {
 
   const handleImageChange = (e) => {
     setImages(Array.from(e.target.files));
+    console.log("images=>",images);
   };
 
   const handleSubmit = async (e) => {
@@ -106,7 +105,7 @@ const ProductForm = () => {
       formDataToSend.append('brand', formData.brand);
       formDataToSend.append('category', formData.category);
       formDataToSend.append('originalPrice', formData.originalPrice);
-      formDataToSend.append('isPublic', 'true');
+      // formDataToSend.append('isPublic', true);
       formDataToSend.append('variants', JSON.stringify(formData.variants));
 
       console.log('FormData being sent:', {
@@ -232,7 +231,7 @@ const ProductForm = () => {
                 onChange={handleChange}
                 required
                 min="0"
-                step="0.01"
+                step="1"
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:border-gray-900"
               />
               <p className="text-sm text-gray-600 mt-2">Base price before any discounts</p>
@@ -308,7 +307,7 @@ const ProductForm = () => {
                         onChange={(e) => handleVariantChange(index, 'price', e.target.value)}
                         required
                         min="0"
-                        step="0.01"
+                        step="1"
                         className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:border-gray-900"
                       />
                     </div>

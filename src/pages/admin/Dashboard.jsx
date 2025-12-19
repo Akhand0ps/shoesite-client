@@ -23,7 +23,7 @@ const AdminDashboard = () => {
       const [productsRes, ordersRes, categoriesRes] = await Promise.allSettled([
         api.get('/product/products'),
         api.get('/order/admin/orders'),
-        api.get('/cat/')
+        api.get('/cat/admin')
       ]);
 
       console.log('Products Response:', productsRes);
@@ -140,7 +140,7 @@ const AdminDashboard = () => {
             </Link>
 
             <Link
-              to="/admin/categories/new"
+              to="/admin/categories"
               className="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-xl hover:border-gray-900 transition-all"
             >
               <svg className="w-8 h-8 text-gray-900 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

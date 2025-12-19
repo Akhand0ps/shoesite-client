@@ -9,7 +9,7 @@ const AdminCategories = () => {
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
-  const [formData, setFormData] = useState({ name: '', parent: '' });
+  const [formData, setFormData] = useState({ name: '', parent: null });
   const location = useLocation();
 
   useEffect(() => {
@@ -20,7 +20,7 @@ const AdminCategories = () => {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const { data } = await api.get('/cat/');
+      const { data } = await api.get('/cat/admin');
       setCategories(data.AllCats || []);
     } catch (error) {
       setError('Failed to load categories');
