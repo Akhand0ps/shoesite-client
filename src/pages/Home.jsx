@@ -7,7 +7,7 @@ const Home = () => {
   return (
     <div className="min-h-screen pt-16 bg-white relative">
       {/* Grid Background */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 -z-10 pointer-events-none">
         <div className="absolute inset-0 opacity-20" style={{
           backgroundImage: `
             linear-gradient(to right, #e5e7eb 1px, transparent 1px),
@@ -151,8 +151,8 @@ const Home = () => {
       </section>
       
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 py-8 sm:py-12 md:py-16 px-4">
-        <div className="max-w-7xl mx-auto">
+      <footer className="bg-white border-t border-gray-200 py-8 sm:py-12 md:py-16 px-4 relative z-10">
+        <div className="max-w-7xl mx-auto pointer-events-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-10 md:gap-12 mb-8 sm:mb-10 md:mb-12">
             {/* Brand Section */}
             <div className="md:col-span-1">
@@ -171,12 +171,40 @@ const Home = () => {
             <div>
               <h3 className="text-gray-900 font-semibold mb-3 sm:mb-4">Quick Links</h3>
               <ul className="space-y-2 sm:space-y-3">
-                <li><Link to="/products" className="text-gray-600 hover:text-gray-900 hover:underline text-sm transition-all cursor-pointer">Products</Link></li>
-                <li><Link to="/about" className="text-gray-600 hover:text-gray-900 hover:underline text-sm transition-all cursor-pointer">About Us</Link></li>
+                <li>
+                  <Link to="/products" className="text-gray-600 hover:text-gray-900 font-medium text-sm transition-all duration-200 flex items-center gap-1 group py-1 px-1 rounded hover:bg-gray-50">
+                    Products
+                    <svg className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/about" className="text-gray-600 hover:text-gray-900 font-medium text-sm transition-all duration-200 flex items-center gap-1 group py-1 px-1 rounded hover:bg-gray-50">
+                    About Us
+                    <svg className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                </li>
                 {user && !user.isAdmin && (
                   <>
-                    <li><Link to="/orders" className="text-gray-600 hover:text-gray-900 hover:underline text-sm transition-all cursor-pointer">My Orders</Link></li>
-                    <li><Link to="/cart" className="text-gray-600 hover:text-gray-900 hover:underline text-sm transition-all cursor-pointer">Shopping Cart</Link></li>
+                    <li>
+                      <Link to="/orders" className="text-gray-600 hover:text-gray-900 font-medium text-sm transition-all duration-200 flex items-center gap-1 group py-1 px-1 rounded hover:bg-gray-50">
+                        My Orders
+                        <svg className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link to="/cart" className="text-gray-600 hover:text-gray-900 font-medium text-sm transition-all duration-200 flex items-center gap-1 group py-1 px-1 rounded hover:bg-gray-50">
+                        Shopping Cart
+                        <svg className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </Link>
+                    </li>
                   </>
                 )}
               </ul>
@@ -203,9 +231,9 @@ const Home = () => {
           {/* Bottom Bar */}
           <div className="pt-6 sm:pt-8 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4">
             <p className="text-gray-500 text-xs sm:text-sm text-center sm:text-left">© 2025 SOLEVIA. All rights reserved</p>
-            <div className="flex items-center gap-4 sm:gap-6">
-              <a href="#" className="text-gray-500 hover:text-gray-900 text-xs sm:text-sm transition-colors">Privacy Policy</a>
-              <a href="#" className="text-gray-500 hover:text-gray-900 text-xs sm:text-sm transition-colors">Terms of Service</a>
+            <div className="flex items-center gap-6 sm:gap-8">
+              <a href="#" className="text-gray-600 hover:text-gray-900 font-medium text-xs sm:text-sm transition-colors duration-200">Privacy Policy</a>
+              <a href="#" className="text-gray-600 hover:text-gray-900 font-medium text-xs sm:text-sm transition-colors duration-200">Terms of Service</a>
             </div>
           </div>
         </div>
