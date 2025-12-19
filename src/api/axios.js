@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  // baseURL: 'https://shoesite-server.onrender.com/api/v1',
-  baseURL:'http://localhost:3000/api/v1',
+  baseURL: 'https://shoesite-server.onrender.com/api/v1',
+  // baseURL:'http://localhost:3000/api/v1',
   withCredentials: true, // This sends cookies automatically
   headers: {
     'Content-Type': 'application/json'
