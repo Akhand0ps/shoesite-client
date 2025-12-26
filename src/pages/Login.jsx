@@ -18,7 +18,7 @@ const Login = () => {
     const result = await login(email, password);
     
     if (result.success) {
-      // Navigate based on user role returned from login
+      // Navigate based on user role
       navigate(result.isAdmin ? '/admin' : '/products');
     } else {
       setError(result.message);

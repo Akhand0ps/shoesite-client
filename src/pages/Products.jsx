@@ -20,7 +20,9 @@ const Products = () => {
     try {
       setLoading(true);
       setError('');
+      console.log("📦 Fetching products from /product/products");
       const response = await api.get('/product/products');
+      console.log("✅ Products fetched:", response.data);
       
       // API returns "Products" (capital P), "products", or "product"
       const productsArray = Array.isArray(response.data.Products) 
@@ -33,8 +35,8 @@ const Products = () => {
       
       setProducts(productsArray);
     } catch (error) {
+      console.error('❌ Error fetching products:', error.response?.status, error.message);
       setError('Failed to load products');
-      console.error('Error fetching products:', error);
       setProducts([]);
     } finally {
       setLoading(false);
